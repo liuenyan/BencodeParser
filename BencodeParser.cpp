@@ -51,62 +51,27 @@ int BencodeParser::readInteger(IntegerElement &ie)
 
     if(++ptr == end)
         return -1;
-
-    int count = 0;
-    const char *int_begin = ptr;
-    long integer;
-    while(ptr != end)
+    char *endptr;
+    long integer = strtol(ptr, &endptr, 10);
+    if((integer == 0 && endptr == ptr) || *endptr != 'e') //没有找到有效的整数
     {
-        if(*ptr == 'e')
-            break;
-        if(isdigit(*ptr))
-        {
-            count++;
-            ptr++;
-        }
-        else
-        {
-            return -1;
-        }
+        return -1;
     }
-    char *temp = new char[count + 1];
-    memcpy(temp, int_begin, count);
-    temp[count] = 0;
-    integer = atol(temp);
-    delete []temp;
     ie.setElement(integer);
-    ptr++;
+    //ptr++;
+    ptr = endptr + 1;
     return 0;
 }
 
 int BencodeParser::readString(StringElement &se)
 {
-    int num = 0;
-    const char *str_begin = ptr;
-    while(ptr != end)
+    char *endptr;
+    long string_length = strtol(ptr, &endptr, 10);
+    if((string_length == 0 && endptr == ptr) || *endptr != ':')
     {
-        if(isdigit(*ptr))
-        {
-            ptr++;
-            num++;
-        }
-        else if(*ptr == ':')
-            break;
-        else
-            return -1;
-    }
-
-    char *temp = new char[num +1];
-    memcpy(temp, str_begin, num);
-    temp[num] = 0;
-    long string_length = atol(temp);
-    delete []temp;
-    ptr++;
-
-    //获取字符串
-    if(ptr + string_length > end)
         return -1;
-
+    }
+    ptr = endptr + 1;
     char *string_buffer = new char[string_length + 1];
     memcpy(string_buffer, ptr, string_length);
     string_buffer[string_length] = 0;
