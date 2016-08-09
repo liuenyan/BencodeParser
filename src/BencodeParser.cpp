@@ -354,7 +354,7 @@ int BencodeParser::findFiles()
         return -1;
     }
 
-    le->setBegin();
+    le->setBegin(); //将位置置为列表的第一个元素
     while(Element *element = le->getNext())
     {
         if(element->getType() == TYPE_DICT)
