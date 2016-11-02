@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
-BencodeParser::BencodeParser(const char *filename) : buffer(0), begin(0) ,end(0), ptr(0), length(0)
+BencodeParser::BencodeParser(const char *filename) 
+    : buffer(0), begin(0) ,end(0), ptr(0), length(0)
 {
     this->filename = filename;
 }
@@ -46,292 +48,212 @@ int BencodeParser::readToBuffer()
     return 0;
 }
 
-int BencodeParser::readInteger(IntegerElement &ie)
+shared_ptr<IntegerElement> BencodeParser::read_integer()
 {
-
     if(++ptr == end)
-        return -1;
+        return nullptr;
     char *endptr;
     long integer = strtol(ptr, &endptr, 10);
     if((integer == 0 && endptr == ptr) || *endptr != 'e') //没有找到有效的整数
     {
-        return -1;
+        return nullptr;
     }
-    ie.setElement(integer);
-    //ptr++;
     ptr = endptr + 1;
-    return 0;
+    return make_shared<IntegerElement>(IntegerElement(integer));
 }
 
-int BencodeParser::readString(StringElement &se)
+shared_ptr<StringElement> BencodeParser::read_string()
 {
     char *endptr;
     long string_length = strtol(ptr, &endptr, 10);
     if((string_length == 0 && endptr == ptr) || *endptr != ':')
     {
-        return -1;
+        return nullptr;
     }
     ptr = endptr + 1;
     char *string_buffer = new char[string_length + 1];
     memcpy(string_buffer, ptr, string_length);
     string_buffer[string_length] = 0;
     ptr += string_length;
-    se.setElement(string_buffer);
-    return 0;
+    auto ret = make_shared<StringElement>(string(string_buffer));
+    delete []string_buffer;
+    return ret;
 }
 
-int BencodeParser::readList(ListElement &le)
+shared_ptr<ListElement> BencodeParser::read_list()
 {
     if(++ptr == end)
-        return -1;
+        return nullptr;
 
-    int ret; 
+    auto le = make_shared<ListElement>(ListElement()); 
 
     while(ptr != end)
     {
         if(*ptr == 'e') //到达列表结束
         {
             ptr++;
-            return 0;
+            return le;
         }
         if(*ptr == 'i')
         {
-            IntegerElement *ie = new IntegerElement;
-            ret = readInteger(*ie);
-            if(ret == -1)
+            shared_ptr<IntegerElement> ie= read_integer();
+            if(!ie)
             {
-                delete ie;
-                return -1;
+                return nullptr;
             }
             else
             {
-                le.addToList(ie);
+                le->addToList(ie);
             }
         }
         else if(isdigit(*ptr))
         {
-            StringElement *se = new StringElement;
-            ret = readString(*se);
-            if(ret == -1)
+            shared_ptr<StringElement> se = read_string();
+            if(!se)
             {
-                delete se;
-                return -1;
+                return nullptr;
             }
             else
             {
-                le.addToList(se);
+                le->addToList(se);
             }
         }
         else if(*ptr == 'l')
         {
-            ListElement *le_ = new ListElement;
-            ret = readList(*le_);
-            if(ret == -1)
+            shared_ptr<ListElement> le_ = read_list();
+            if(!le_)
             {
-                delete le_;
-                return -1;
+                return nullptr;
             }
             else
             {
-                le.addToList(le_);
+                le->addToList(le_);
             }
         }
         else if(*ptr == 'd')
         {
-            DictElement *de = new DictElement;
-            ret = readDict(*de);
-            if(ret == -1)
+            shared_ptr<DictElement> de = read_dict();
+            if(!de)
             {
-                delete de;
-                return -1;
+                return nullptr;
             }
             else
             {
-                le.addToList(de);
+                le->addToList(de);
             }
         }
 
         else
         {
-            return -1;
+            return nullptr;
         }
     }
-    return -1;
+    return nullptr;
 }
 
-int BencodeParser::readDict(DictElement &de)
+shared_ptr<DictElement> BencodeParser::read_dict()
 {
     if(++ptr == end)
-        return -1;
+        return nullptr;
 
-    int ret;
+    auto de = make_shared<DictElement>(DictElement());
 
     while(ptr != end)
     {
         if(*ptr == 'e') //到达字典结束
         {
             ptr++;
-            return 0;
+            return de;
         }
         //分析key
         if(!isdigit(*ptr))
-            return -1;
-        StringElement *key = new StringElement;
-        ret = readString(*key);
-        if(ret == -1)
+            return nullptr;
+        
+        auto key = read_string();
+        if(!key)
         {
-            delete key;
-            return -1;
+            return nullptr;
         }
         //分析value
         if(*ptr == 'i')
         {
-            IntegerElement *ie = new IntegerElement;
-            ret = readInteger(*ie);
-            if(ret == -1)
+            auto value =read_integer();
+            if(!value)
             {
-                delete key;
-                delete ie;
-                return -1;
+                return nullptr;
             }
             else
             {
-                KeyValue *kv = new KeyValue(key, ie);
-                de.addToDict(kv);
+                de->addToDict(key, value);
             }
         }
         else if(isdigit(*ptr))
         {
-            StringElement *se = new StringElement;
-            ret = readString(*se);
-            if(ret == -1)
+            auto value = read_string();
+            if(!value)
             {
-                delete key;
-                delete se;
-                return -1;
+                return nullptr;
             }
             else
             {
-                KeyValue *kv = new KeyValue(key, se);
-                de.addToDict(kv);
+                de->addToDict(key, value);
             }
         }
         else if(*ptr == 'l')
         {
-            ListElement *le = new ListElement;
-            ret = readList(*le);
-            if(ret == -1)
+            auto value = read_list();
+            if(!value)
             {
-                delete key;
-                delete le;
-                return -1;
+                return nullptr;
             }
             else
             {
-                KeyValue *kv = new KeyValue(key, le);
-                de.addToDict(kv);
+                de->addToDict(key, value);
             }
         }
         else if(*ptr == 'd')
         {
-            DictElement *de_ = new DictElement;
-            ret = readDict(*de_);
-            if(ret == -1)
+            auto value = read_dict();
+            if(!value)
             {
-                delete key;
-                delete de_;
-                return -1;
+                return nullptr;
             }
             else
             {
-                KeyValue *kv = new KeyValue(key, de_);
-                de.addToDict(kv);
+                de->addToDict(key, value);
             }
         }
 
         else
         {
-            return -1;
+            return nullptr;
         }
     }
-    return 0;
+    return nullptr;
 }
 
-int BencodeParser::parse()
+
+shared_ptr<Element> BencodeParser::parse()
 {
     if(readToBuffer() == -1)
-        return -1;
+        return nullptr;
 
-    int ret;
-
-    //ptr = buffer;
     if(*ptr == 'i')
-    {
-        IntegerElement *ie = new IntegerElement;
-        ret = readInteger(*ie);
-        if(ret == -1)
-        {
-            delete ie;
-            return -1;
-        }
-        else
-        {
-            cout << ie->getElement() << endl;
-            delete ie;
-            return 0;
-        }
-    }
+        return read_integer();
+    
     else if(isdigit(*ptr))
-    {
-        StringElement *se = new StringElement;
-        ret = readString(*se);
-        if(ret == -1)
-        {
-            delete se;
-            return -1;
-        }
-        else
-        {
-            cout << se ->getElement() << endl;
-            delete se;
-            return 0;
-        }
-    }
+        return read_string();
+    
     else if(*ptr == 'l')
-    {
-        ListElement *le = new ListElement;
-        ret = readList(*le);
-        if(ret == -1)
-        {
-            delete le;
-            return -1;
-        }
-        else
-        {
-            delete le;
-            return 0;
-        }
-    }
+        return read_list();
+    
     else if(*ptr == 'd')
-    {
-        DictElement *de = new DictElement;
-        ret = readDict(*de);
-        if(ret == -1)
-        {
-            delete de;
-            return -1;
-        }
-        else
-        {
-            delete de;
-            return 0;
-        }
-    }
+        return read_dict();
+    
     else
-    {
-        return -1;
-    }
-    return 0;
+        return nullptr;
+    
+    return nullptr;
 }
 
 int BencodeParser::findFiles()
@@ -339,49 +261,46 @@ int BencodeParser::findFiles()
     if(readToBuffer() == -1)
         return -1;
 
-    int ret;
     const char *flag = "5:files";
     ptr = (const char *)memmem((const void *)buffer, length, (const void *)flag, 7);
     if(ptr == NULL)
         return -1;
 
     ptr += 7;
-    ListElement *le = new ListElement;
-    ret = readList(*le);
-    if (ret == -1)
+    auto le = read_list();
+    if (!le)
     {
-        delete le;
         return -1;
     }
-
-    le->setBegin(); //将位置置为列表的第一个元素
-    while(Element *element = le->getNext())
+    
+    auto iter_pair = le->get_iterators();
+    for (auto it=iter_pair.first; it!=iter_pair.second; ++it)
     {
-        if(element->getType() == TYPE_DICT)
+        if((**it).get_element_type() == element_dict)
         {
-            DictElement *de = (DictElement *)element;
-            Element *length_element = de->findValue("length");
-            if(length_element != 0)
+            DictElement *de = dynamic_cast<DictElement *> (it->get());
+            auto length_element = dynamic_cast<IntegerElement *> 
+                (de->findValue(string("length")).get());
+
+            if(length_element)
             {
-                cout << "length:" << ((IntegerElement *)length_element)->getElement() << endl;
+                cout << "length:\t" << length_element->getElement() << endl;
             }
-            ListElement *path_element = (ListElement *)de->findValue("path");
-            if(path_element != 0)
+            auto path_element = dynamic_cast<ListElement *> 
+                (de->findValue(string("path")).get());
+            if(path_element)
             {
-                cout << "path:" << endl;
-                path_element->setBegin();
-                while(StringElement *path = (StringElement *)path_element->getNext())
+                auto iter_pair2 = path_element->get_iterators();
+
+                cout << "path:";
+                for(auto it2=iter_pair2.first; it2!=iter_pair2.second; ++it2)
                 {
-                    cout << path->getElement() << endl;
+                    auto path = dynamic_cast<StringElement *> ((*it2).get());
+                    cout << "\t" << path->getElement() << endl;
                 }
             }
         }
-        else
-        {
-            return -1;
-        }
     }
-    delete le;
     return 0;
 }
 

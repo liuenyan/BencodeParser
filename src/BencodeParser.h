@@ -2,13 +2,14 @@
 #define BENCODEPARSER_H
 
 #include "Element.h"
+#include <memory>
 
 class BencodeParser
 {
 public:
     BencodeParser(const char *filename);
     ~BencodeParser();
-    int parse();
+    std::shared_ptr<Element> parse();
     int findFiles();
 private:
     const char *filename;
@@ -18,10 +19,10 @@ private:
     const char *ptr;
     long length;
     int readToBuffer();
-    int readInteger(IntegerElement &ie);
-    int readString(StringElement &se);
-    int readList(ListElement &v);
-    int readDict(DictElement &v);
+    std::shared_ptr<IntegerElement> read_integer();
+    std::shared_ptr<StringElement> read_string();
+    std::shared_ptr<ListElement> read_list();
+    std::shared_ptr<DictElement> read_dict();
 };
 
 #endif

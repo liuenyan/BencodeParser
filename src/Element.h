@@ -1,81 +1,91 @@
-#ifndef ELEMENT_H
-#define ELEMENT_H
+#ifndef _ELEMENT_H_
+#define _ELEMENT_H_
 
-#include "ElementType.h"
 #include <vector>
-#include <string.h>
+#include <string>
+#include <map>
+#include <memory>
+
+enum ElementType {
+    element_default,
+    element_integer,
+    element_string,
+    element_list,
+    element_dict
+};
 
 class Element
 {
-public:
-    Element(int type){this->type = type;};
-    ~Element(){};
-    int getType(){return type;};
-protected:
-   int type;
+    public:
+        int get_element_type() const {return element_type;};
+    protected:
+        Element(int t) : element_type(t){};
+        virtual ~Element(){};
+    private:
+        int element_type{element_integer};
 };
 
 class IntegerElement : public Element
 {
-public:
-    IntegerElement() : Element(TYPE_INT){};
-    ~IntegerElement(){};
-    long getElement(){return element;};
-    void setElement(int element){this->element = element;};
-private:
-    long element;
+    public:
+        IntegerElement(long i) : Element(element_integer), element(i){};
+        ~IntegerElement(){};
+        long getElement() const {return element;};
+        void setElement(long element){this->element = element;};
+    private:
+        long element;
 };
 
 class StringElement : public Element
 {
-public:
-    StringElement() : Element(TYPE_STRING), element(0){};
-    ~StringElement(){delete []element;};
-    const char *getElement(){return element;};
-    void setElement(const char *element){this->element = element;};
-private:
-    const char *element;
+    public:
+        StringElement(std::string s) : Element(element_string), element(s) {};
+        ~StringElement(){};
+        std::string getElement() const {return element;};
+        void setElement(std::string element){this->element = element;};
+    private:
+        std::string element;
 };
 
 class ListElement : public Element
 {
-public:
-    ListElement() : Element(TYPE_LIST){};
-    ~ListElement(); 
-    void addToList(Element *e);
-    void setBegin();     /*将迭代器指向vector的开始位置*/
-    Element *getNext();  /*获得vector的下一个元素*/
-private:
-    std::vector<Element*> element;
-    std::vector<Element*>::iterator iter;
-};
+    public:
+        typedef std::vector<std::shared_ptr<Element>>::const_iterator \
+            list_iter;
+        ListElement():Element(element_list){};
+        ~ListElement(){}; 
+        void addToList(std::shared_ptr<Element> e)
+        {
+            element.push_back(e);
+        };
+        std::pair<list_iter, list_iter> get_iterators() const
+        {
+            return std::pair<list_iter, list_iter>
+                (element.cbegin(), element.cend());
+        }
 
-class KeyValue
-{
-public:
-    KeyValue() : key(0), value(0){};
-    KeyValue(StringElement *key, Element *value)
-    {
-        this->key = key;
-        this->value = value;
-    };
-    ~KeyValue();
-    StringElement *getKey(){return key;};
-    Element *getValue(){return value;};
-private:
-    StringElement *key;
-    Element *value;
+    private:
+        std::vector<std::shared_ptr<Element>> element;
 };
 
 class DictElement : public Element
 {
-public:
-    DictElement() : Element(TYPE_DICT){};
-    ~DictElement();
-    void addToDict(KeyValue *e);
-    Element *findValue(const char *key); 
-private:
-    std::vector<KeyValue*> element;
+    public:
+        DictElement() : Element(element_dict){};
+        ~DictElement(){};
+        void addToDict(std::shared_ptr<StringElement> key,
+                std::shared_ptr<Element> value)
+        {
+            element.emplace(key->getElement(), value); 
+        };
+        std::shared_ptr<Element> findValue(std::string key) const
+        {
+            auto it = element.find(key);
+            return (it != element.end()) ? (it->second) : (nullptr);
+        };
+    private:
+        std::map<std::string, 
+            std::shared_ptr<Element>> element;
 };
 
 #endif

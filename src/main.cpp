@@ -1,5 +1,6 @@
 #include "BencodeParser.h"
 #include <dirent.h>
+#include <string.h>
 #include <iostream>
 
 using namespace std;
