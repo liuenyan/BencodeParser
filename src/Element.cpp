@@ -33,8 +33,7 @@ ostream &ListElement::pretty(ostream &os, unsigned int idt) const
 
     for(auto it=element.cbegin(); it!=element.cend(); ++it)
     {
-        Element *e = it->get();
-        e->pretty(os, idt+1);
+        (*it)->pretty(os, idt+1);
         os << "," << endl;
     }
     indent(os, idt);

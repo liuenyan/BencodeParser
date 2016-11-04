@@ -9,7 +9,6 @@ using namespace std;
 
 int main()
 {
-    int ret;
     char real_path[256];
     BencodeParser *parser;
     DIR* dir;
@@ -26,16 +25,15 @@ int main()
         real_path[len1+len2] = 0;
         cout << ptr->d_name << endl;
         parser = new BencodeParser(real_path);
-        ret = parser->findFiles();
-        if(ret == -1)
-        {
-            cout << "error find files." << endl;
-        }
-        //Element *e = parser->parse().get();
-        //e->pretty(cout);
-        //cout << endl;
+        //ret = parser->findFiles();
+        //if(ret == -1)
+        //{
+        //    cout << "error find files." << endl;
+        //}
+        shared_ptr<Element> e = parser->parse();
+        e->pretty(cout);
+        cout << endl;
         delete parser;
-        parser = 0;
     }
     closedir(dir);
     return 0;
