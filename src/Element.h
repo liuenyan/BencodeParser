@@ -18,6 +18,9 @@ class Element
 {
     public:
         int get_element_type() const {return element_type;};
+        virtual std::ostream &pretty(
+                std::ostream &os, unsigned int indent=0) const = 0;
+        std::ostream &indent(std::ostream &os, unsigned int indent) const;
     protected:
         Element(int t) : element_type(t){};
         virtual ~Element(){};
@@ -32,6 +35,8 @@ class IntegerElement : public Element
         ~IntegerElement(){};
         long getElement() const {return element;};
         void setElement(long element){this->element = element;};
+        virtual std::ostream &pretty(
+                std::ostream &os, unsigned int indent=0) const;
     private:
         long element;
 };
@@ -43,6 +48,8 @@ class StringElement : public Element
         ~StringElement(){};
         std::string getElement() const {return element;};
         void setElement(std::string element){this->element = element;};
+        virtual std::ostream &pretty(
+                std::ostream &os, unsigned int indent=0) const;
     private:
         std::string element;
 };
@@ -63,7 +70,8 @@ class ListElement : public Element
             return std::pair<list_iter, list_iter>
                 (element.cbegin(), element.cend());
         }
-
+        virtual std::ostream &pretty(
+                std::ostream &os, unsigned int indent=0) const;
     private:
         std::vector<std::shared_ptr<Element>> element;
 };
@@ -83,9 +91,16 @@ class DictElement : public Element
             auto it = element.find(key);
             return (it != element.end()) ? (it->second) : (nullptr);
         };
+        virtual std::ostream &pretty(
+                std::ostream &os, unsigned int indent=0) const;
     private:
         std::map<std::string, 
             std::shared_ptr<Element>> element;
 };
+
+std::ostream &operator<<(std::ostream &os, IntegerElement& e);
+std::ostream &operator<<(std::ostream &os, StringElement& e);
+std::ostream &operator<<(std::ostream &os, ListElement& e);
+std::ostream &operator<<(std::ostream &os, DictElement& e);
 
 #endif

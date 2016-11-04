@@ -31,7 +31,9 @@ int main()
         {
             cout << "error find files." << endl;
         }
-        //parser->parse();
+        //Element *e = parser->parse().get();
+        //e->pretty(cout);
+        //cout << endl;
         delete parser;
         parser = 0;
     }

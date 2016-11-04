@@ -272,35 +272,7 @@ int BencodeParser::findFiles()
     {
         return -1;
     }
-    
-    auto iter_pair = le->get_iterators();
-    for (auto it=iter_pair.first; it!=iter_pair.second; ++it)
-    {
-        if((**it).get_element_type() == element_dict)
-        {
-            DictElement *de = dynamic_cast<DictElement *> (it->get());
-            auto length_element = dynamic_cast<IntegerElement *> 
-                (de->findValue(string("length")).get());
-
-            if(length_element)
-            {
-                cout << "length:\t" << length_element->getElement() << endl;
-            }
-            auto path_element = dynamic_cast<ListElement *> 
-                (de->findValue(string("path")).get());
-            if(path_element)
-            {
-                auto iter_pair2 = path_element->get_iterators();
-
-                cout << "path:";
-                for(auto it2=iter_pair2.first; it2!=iter_pair2.second; ++it2)
-                {
-                    auto path = dynamic_cast<StringElement *> ((*it2).get());
-                    cout << "\t" << path->getElement() << endl;
-                }
-            }
-        }
-    }
+    cout << *le << endl;
     return 0;
 }
 
