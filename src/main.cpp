@@ -31,7 +31,7 @@ int main()
         //    cout << "error find files." << endl;
         //}
         shared_ptr<Element> e = parser->parse();
-        e->pretty(cout);
+        cout << *e <<endl;
         cout << endl;
         delete parser;
     }

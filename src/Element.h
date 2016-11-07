@@ -98,9 +98,6 @@ class DictElement : public Element
             std::shared_ptr<Element>> element;
 };
 
-std::ostream &operator<<(std::ostream &os, IntegerElement& e);
-std::ostream &operator<<(std::ostream &os, StringElement& e);
-std::ostream &operator<<(std::ostream &os, ListElement& e);
-std::ostream &operator<<(std::ostream &os, DictElement& e);
+std::ostream &operator<<(std::ostream &os, Element &e);
 
 #endif
